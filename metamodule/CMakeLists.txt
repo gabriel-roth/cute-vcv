@@ -15,7 +15,7 @@ endif()
 include(${METAMODULE_SDK_DIR}/plugin.cmake)
 
 
-project(cute-vcv VERSION 0.1 DESCRIPTION "CuteLab Plugin for MetaModule" LANGUAGES C CXX ASM)
+project(cute-vcv VERSION 1.0 DESCRIPTION "CuteLab Plugin for MetaModule" LANGUAGES C CXX ASM)
 
 # Add sources from the Rack source repo
 set(SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
