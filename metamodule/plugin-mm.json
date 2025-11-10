@@ -1,0 +1,15 @@
+{
+  "MetaModuleBrandName": "CuteLab",
+  "MetaModuleBrandSlug": "cutelab",
+  "MetaModulePluginMaintainer": "Gabriel Roth",
+  "MetaModulePluginMaintainerEmail": "gabe.roth@gmail.com",
+  "MetaModulePluginMaintainerUrl": "https://gabrielroth.com",
+  "MetaModuleDescription": "CuteLabNYC's Mom Jeans pulsar VCO, ported from VCV",
+  "MetaModuleIncludedModules":
+  [
+    {
+      "slug": "mom-jeans",
+      "name": "Mom Jeans"
+    }
+  ]
+}
