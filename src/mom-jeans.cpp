@@ -571,6 +571,9 @@ struct Mom_jeansWidget : ModuleWidget {
 	}
 
 	void appendContextMenu(Menu* menu) override {
+		return;
+
+	/* 
 		MomJeansBase* module = dynamic_cast<MomJeansBase*>(this->module);
         if (!module)
             return;
@@ -631,7 +634,9 @@ struct Mom_jeansWidget : ModuleWidget {
 				}
 			));
         }));
-	}
+	
+	*/
+ }	
 };
 
 
