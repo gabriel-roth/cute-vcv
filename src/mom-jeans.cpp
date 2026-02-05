@@ -112,7 +112,7 @@ struct MomJeansBase : Module {
 
 	MomJeansBase() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(PITCH_PARAM, 0.f, 1.f, 0.25f, "Pitch");
+		configParam(PITCH_PARAM, 0.f, 1.f, 16.f/26.f, "Pitch"); // default to C4
 		frequencyParamQuantity = new FrequencyParamQuantity();
 		paramQuantities[PITCH_PARAM] = frequencyParamQuantity;
 		paramQuantities[PITCH_PARAM]->name = "Pitch";
