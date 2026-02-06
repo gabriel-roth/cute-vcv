@@ -63,6 +63,7 @@ struct FrequencyParamQuantity : ParamQuantity {
 
 struct MomJeansBase : Module {
 	FrequencyParamQuantity *frequencyParamQuantity;
+	dsp::SchmittTrigger syncTriggers[16];
 
 	enum Theme {
 		FOLLOW = 0,  // Add this = 0,
@@ -334,7 +335,7 @@ struct MomJeansBase : Module {
 				waveform,
 				quantization > 0.5f ? 1 : 0,
 				coupling > 0.5f ? 1 : 0,
-				sync > 2.5f ? 1 : 0,
+				syncTriggers[c].process(sync) ? 1 : 0,
 				c
 			);
 
