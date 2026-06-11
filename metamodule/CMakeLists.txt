@@ -20,9 +20,9 @@ project(cute-vcv VERSION 1.0 DESCRIPTION "CuteLab Plugin for MetaModule" LANGUAG
 # Add sources from the Rack source repo
 set(SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 
-add_library(cute-vcv STATIC ${CUTE_VCV_SOURCES})
+add_library(CuteLab STATIC ${CUTE_VCV_SOURCES})
 
-target_sources(cute-vcv PRIVATE
+target_sources(CuteLab PRIVATE
     ${SOURCE_DIR}/src/plugin.cpp 
     ${SOURCE_DIR}/src/mom-jeans.cpp
     ${SOURCE_DIR}/cores/oscillator/lut/lut_saw_uint8.c
@@ -56,15 +56,15 @@ target_sources(cute-vcv PRIVATE
     )
 	
 # Add includes and compile options for source repo
-target_include_directories(cute-vcv PRIVATE ${SOURCE_DIR}/src)
-target_include_directories(cute-vcv PRIVATE ${SOURCE_DIR}/cores/pulsar)
-target_include_directories(cute-vcv PRIVATE ${SOURCE_DIR}/cores/phasor)
-target_include_directories(cute-vcv PRIVATE ${SOURCE_DIR}/cores/oscillator)
-target_include_directories(cute-vcv PRIVATE ${SOURCE_DIR}/cores/oscillator/lut)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/src)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/pulsar)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/phasor)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/oscillator)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/oscillator/lut)
 
 # Call this to link and create the plugin file
 create_plugin(
-    SOURCE_LIB      cute-vcv                                        # The cmake target name (defined in add_target)
+    SOURCE_LIB      CuteLab                                         # The cmake target name (defined in add_target)
     PLUGIN_NAME     CuteLab                                         # This must match the brand "slug" used in VCV Rack
     PLUGIN_JSON     ${SOURCE_DIR}/plugin.json                       # Path to the plugin.json file used by VCV Rack
     SOURCE_ASSETS   ${CMAKE_CURRENT_LIST_DIR}/assets                # Path to the assets/ dir containing the PNGs
