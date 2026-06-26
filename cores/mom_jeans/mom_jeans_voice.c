@@ -1,5 +1,6 @@
 #include "mom_jeans_voice.h"
 #include <math.h>
+#include "pulsar.h"
 
 uint8_t mj_sync_gate(float volts) {
     return volts > 2.5f ? 1 : 0;
@@ -32,4 +33,21 @@ void mj_voice_map(const mj_voice_in_t *in, mj_voice_config_t *out) {
 
     out->ratio_lock = in->quantization;
     out->frequency_couple = in->coupling;
+}
+
+mj_voice_out_t mj_voice_process(ps_t *pulsar, const mj_voice_in_t *in, uint8_t sync_gate) {
+    mj_voice_config_t cfg;
+    mj_voice_map(in, &cfg);
+
+    pulsar_configure(pulsar, cfg.pulse_frequency, cfg.density_ratio, cfg.mod_ratio,
+                     cfg.mod_depth, cfg.waveform, cfg.ratio_lock, cfg.frequency_couple);
+
+    float debug = 0.0f;
+    float pulse = pulsar_process(pulsar, cfg.pulse_frequency, sync_gate, &debug);
+    float sync_out = pulsar_get_sync_output(pulsar);
+    float lfo = sinf(pulsar_get_internal_lfo_phase(pulsar) * 2.0f * (float)PI);
+    float mod_rate = pulsar_get_internal_mod_rate(pulsar);
+
+    mj_voice_out_t o = { pulse, sync_out, lfo, mod_rate };
+    return o;
 }

@@ -58,9 +58,26 @@ static void test_voice_map(void) {
     CHECK(out.frequency_couple == 1 && out.ratio_lock == 1);
 }
 
+static void test_voice_process(void) {
+    ps_t p;
+    pulsar_init(&p, 48000.0f);
+    mj_voice_in_t in = {0};
+    in.pitch_param = 16.0f/26.0f;     // C4
+    in.density_param = 0.5f;
+    mj_voice_out_t o = {0};
+    // Run a block of samples; output must stay finite and bounded.
+    for (int i = 0; i < 4096; i++) {
+        o = mj_voice_process(&p, &in, 0);
+        CHECK(isfinite(o.pulse) && isfinite(o.trigger));
+        CHECK(o.pulse >= -2.0f && o.pulse <= 2.0f);
+    }
+    CHECK(isfinite(o.mod_rate));
+}
+
 int main(void) {
     test_sync_gate();
     test_voice_map();
+    test_voice_process();
     if (failures) { printf("%d failures\n", failures); return 1; }
     printf("all tests passed\n");
     return 0;

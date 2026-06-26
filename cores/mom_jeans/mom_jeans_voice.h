@@ -31,7 +31,13 @@ typedef struct {
     uint8_t ratio_lock, frequency_couple;
 } mj_voice_config_t;
 
+typedef struct { float pulse, trigger, internal_lfo, mod_rate; } mj_voice_out_t;
+
 void mj_voice_map(const mj_voice_in_t *in, mj_voice_config_t *out);
+
+// Runs mj_voice_map, then pulsar_configure + pulsar_process for one sample.
+// `trigger` is the raw pulsar sync output (caller scales x10 like `pulse`).
+mj_voice_out_t mj_voice_process(ps_t *pulsar, const mj_voice_in_t *in, uint8_t sync_gate);
 
 #ifdef __cplusplus
 }
