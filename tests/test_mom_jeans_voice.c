@@ -8,13 +8,6 @@ static int failures = 0;
 
 static int approx(float a, float b, float eps) { return fabsf(a-b) <= eps; }
 
-static void test_sync_gate(void) {
-    CHECK(mj_sync_gate(0.0f) == 0);   // below threshold
-    CHECK(mj_sync_gate(2.5f) == 0);   // exactly threshold is NOT high ( > 2.5 )
-    CHECK(mj_sync_gate(2.6f) == 1);   // above threshold
-    CHECK(mj_sync_gate(5.0f) == 1);   // clearly high
-}
-
 static void test_voice_map(void) {
     mj_voice_config_t out;
 
@@ -89,7 +82,6 @@ static void test_sync_trigger(void) {
 }
 
 int main(void) {
-    test_sync_gate();
     test_sync_trigger();
     test_voice_map();
     test_voice_process();

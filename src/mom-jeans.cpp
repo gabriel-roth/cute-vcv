@@ -64,6 +64,7 @@ struct FrequencyParamQuantity : ParamQuantity {
 
 struct MomJeansBase : Module {
 	FrequencyParamQuantity *frequencyParamQuantity;
+	mj_sync_state_t sync_state[16]{};
 
 	enum Theme {
 		FOLLOW = 0,  // Add this = 0,
@@ -312,7 +313,7 @@ struct MomJeansBase : Module {
 			vin.linear_fm_cv = linear_fm;
 			vin.v_oct_cv = v_oct;
 
-			PulsarOutput pulsar_output = nextSample(vin, mj_sync_gate(sync), c);
+			PulsarOutput pulsar_output = nextSample(vin, mj_sync_trigger(&sync_state[c], sync), c);
 
 			outputs[TRIGGER_OUTPUT].setVoltage(pulsar_output.sync * 10.0f, c);
 			outputs[OUTPUT_OUTPUT].setVoltage(pulsar_output.pulse * 10.0f, c);

@@ -12,6 +12,7 @@ class MomJeansCore : public SmartCoreProcessorPoly<MomJeansInfo> {
     using enum Info::Elem;
 
     ps_t pulsars[CoreProcessor::MaxPolyChannels];
+    mj_sync_state_t sync_state[CoreProcessor::MaxPolyChannels]{};
     float sampleRate = 48000.f;
 
     static uint8_t isDown(LatchingButton::State_t s) {
@@ -74,7 +75,7 @@ public:
             in.linear_fm_cv = getInput<LinearFmIn>(c).value_or(0.f);
             in.v_oct_cv = getInput<VOctIn>(c).value_or(0.f);
 
-            uint8_t sync_gate = mj_sync_gate(getInput<SyncIn>(c).value_or(0.f));
+            uint8_t sync_gate = mj_sync_trigger(&sync_state[c], getInput<SyncIn>(c).value_or(0.f));
             mj_voice_out_t o = mj_voice_process(&pulsars[c], &in, sync_gate);
 
             setOutput<TriggerOut>(o.trigger * 10.0f, c);

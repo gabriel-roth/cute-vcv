@@ -8,10 +8,6 @@
 extern "C" {
 #endif
 
-// Sync gate (legacy, stateless level detection). Retained only until call
-// sites migrate to mj_sync_trigger; removed in the same change.
-uint8_t mj_sync_gate(float volts);
-
 // Rising-edge sync detector. Single source of truth for both platforms.
 // Fires (returns 1) only on the LOW->HIGH transition; resets at MJ_SYNC_LOW.
 // Thresholds match the original dsp::SchmittTrigger defaults.
