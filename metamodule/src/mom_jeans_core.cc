@@ -92,6 +92,20 @@ public:
 
 // init() must see the complete MomJeansCore type (register_module calls
 // std::make_unique<MomJeansCore>), so it lives in this translation unit.
+//
+// When compiled as a simulator built-in (METAMODULE_BUILTIN is defined by the
+// simulator's ext-plugins.cmake), the build system generates a call:
+//     init_CuteLab(rack::plugin::Plugin*)
+// Our plugin is native (no VCV Rack adapter), so we export that signature but
+// ignore the Plugin* argument -- registration goes through MetaModule's own
+// register_module(). The normal .mmplugin build uses the no-arg init() below.
+#ifdef METAMODULE_BUILTIN
+namespace rack::plugin { struct Plugin; }
+void init_CuteLab(rack::plugin::Plugin *) {
+    register_module<MomJeansCore, MomJeansInfo>("CuteLab");
+}
+#else
 extern "C" void init() {
     register_module<MomJeansCore, MomJeansInfo>("CuteLab");
 }
+#endif
