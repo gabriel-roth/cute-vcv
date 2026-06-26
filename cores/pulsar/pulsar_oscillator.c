@@ -1,4 +1,5 @@
 #include "pulsar_oscillator.h"
+#include "pulsar_lut.h" // arm_sin_f32: pure-C LUT sine, the hardware DSP path
 #include <math.h>
 
 #define PI 3.14159265358979323846
@@ -10,11 +11,9 @@ float slow_sinc(uint32_t raw_phase, uint32_t phase_increment, float bipolar_phas
     return 1.0f; // Handle the zero case
   }
   
-  #ifdef ARM_MATH_CM7
+  // LUT sine (arm_sin_f32) is the intended hardware path and ~10x cheaper than
+  // libm sinf on the A7. Range reduction is handled inside arm_sin_f32.
   float sinx = arm_sin_f32(x);
-  #else
-  float sinx = sinf(x);
-  #endif
 
   return sinx / x; // Sinc function: sin(x) / x
 }
@@ -137,7 +136,8 @@ float blep_saw(uint32_t raw_phase, uint32_t phase_increment, float bipolar_phase
 float contained_square(uint32_t raw_phase, uint32_t phase_increment, float bipolar_phase, float bandwidth, osc_process_context_t *context)
 {
   float x = bipolar_phase * PI;
-  float window = cosf(x) * 0.5f + 0.5f; // Convert to [0, 1]
+  // cos(x) == sin(x + pi/2); use the LUT sine to avoid libm cosf.
+  float window = arm_sin_f32(x + (float)(PI * 0.5)) * 0.5f + 0.5f; // Convert to [0, 1]
   // x *= bandwidth;
   x = bipolar_phase * bandwidth * 0.25f;
   float t = fabsf(fmodf(fabsf(x + 0.5f), 2.0f) - 1.0f) < 0.5f ? 1.0f : -1.0f;

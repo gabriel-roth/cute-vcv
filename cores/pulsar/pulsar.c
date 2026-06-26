@@ -18,6 +18,21 @@ static float linear_scale(float x, float in_min, float in_max, float out_min, fl
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// Fast tanh for the output saturator. Order-7 Pade rational approximation,
+// accurate to ~1e-4 vs libm tanhf for |x| <= 4.9, clamped to the +-1 asymptote
+// beyond (tanh(4.9) ~= 0.99989). Replaces a per-sample libm tanhf call, which is
+// an expensive exp-based software routine on the A7. Cheap (a few mults + 1 div)
+// while preserving the saturation curve closely enough to keep the same audible
+// character.
+static inline float fast_tanh(float x) {
+  if (x < -4.9f) return -1.0f;
+  if (x > 4.9f) return 1.0f;
+  float x2 = x * x;
+  float num = x * (135135.0f + x2 * (17325.0f + x2 * (378.0f + x2)));
+  float den = 135135.0f + x2 * (62370.0f + x2 * (3150.0f + 28.0f * x2));
+  return num / den;
+}
+
 // Waveform functions (normalized)
 static float sinc(int32_t phase) {
   static const float scale = 1.0f / 2147483648.0f;
@@ -229,16 +244,16 @@ float _calc_mod_ratio(float f0, float mod_ratio, uint8_t frequency_couple, uint8
         index = fminf(index, FUN_RATIOS_SIZE - 1);
         out = f0 * fun_ratios[index];
       } else {
-        out = powf(mod_ratio, 2.0);
+        out = mod_ratio * mod_ratio;
         float midpoint = out * fmax;
         float tf;
         if (midpoint > f0) {
           tf = (midpoint - f0) / (fmax - f0);
-          tf = powf(tf, 2.0f); // ease
+          tf = tf * tf; // ease
           out = (tf) * fmax + (1 - tf) * midpoint;
         } else {
           tf = (f0 - midpoint) / f0;
-          tf = powf(tf, 2.0f); // ease
+          tf = tf * tf; // ease
           out = (tf) * 0.0f + (1 - tf) * midpoint;
         }
 
@@ -259,11 +274,11 @@ float _calc_mod_ratio(float f0, float mod_ratio, uint8_t frequency_couple, uint8
       float localLowCutoff = 0.3f;
       if (mod_ratio < coupledLowCutoff) {
         tf = (mod_ratio) / (coupledLowCutoff);
-        tf = powf(tf, 2.0f); // ease
+        tf = tf * tf; // ease
         out = tf * vibratoMax;
       } else if (mod_ratio < coupledHighCutoff) {
         tf = (mod_ratio - coupledLowCutoff) / (coupledHighCutoff - coupledLowCutoff);
-        tf = powf(tf, 2.0f); // ease
+        tf = tf * tf; // ease
         out = (1 - tf) * vibratoMax + (tf) * (f0 + vibratoMax) * 0.4;
       } else {
         fac1 = (ratioMax - 0.1) * (mod_ratio - coupledHighCutoff) / (1 - coupledHighCutoff);
@@ -272,11 +287,11 @@ float _calc_mod_ratio(float f0, float mod_ratio, uint8_t frequency_couple, uint8
     } else {
       if (mod_ratio < lowCutoff) {
         tf = (mod_ratio) / (lowCutoff);
-        tf = powf(tf, 2.0f); // ease
+        tf = tf * tf; // ease
         out = tf * vibratoMax;
       } else {
         tf = (mod_ratio - lowCutoff) / (1.0f - lowCutoff);
-        tf = powf(tf, 2.0f); // ease
+        tf = tf * tf; // ease
         out = (1 - tf) * vibratoMax + (tf) * (fmax) * 0.1;
       } 
     }
@@ -334,7 +349,7 @@ void _calc_mod_depth(float f0, float mod_depth, uint8_t frequency_couple, float 
     depth_mult = lf * powf(mod_depth, 2.7) * 10.0f;
   } else {
     if (mod_depth < breakpoint) {
-      depth_mult = powf(mod_depth * inv_breakpoint, 2.0f);
+      depth_mult = (mod_depth * inv_breakpoint) * (mod_depth * inv_breakpoint);
     } else {
       depth_mult = (mod_depth - breakpoint) * breakpoint_top_scale + 1.0f;
     }
@@ -370,7 +385,7 @@ float _calc_density(float f0, float density_ratio, float mod_depth) {
     0.0f,
     1.0f
   );
-  density = powf(density, 1.5f);
+  density = density * sqrtf(density); // x^1.5; sqrtf is a hardware VFP op on A7
   density = linear_scale(density, 0.0f, 1.0f, frequency_low_scale_factor, frequency_high_scale_factor);
 
   return density;
@@ -379,7 +394,8 @@ float _calc_density(float f0, float density_ratio, float mod_depth) {
 float _calc_grain_length(float f0, float density_ratio, float mod_depth, float modulated_density, float sample_rate)
 {
   float density = _calc_density(f0, density_ratio, mod_depth);
-  float grain_length_base = powf(1.15f, density_ratio * 10.0f);
+  // powf(1.15, y) == exp2f(y * log2(1.15)); exp2f avoids the general pow path.
+  float grain_length_base = exp2f(density_ratio * 10.0f * 0.20163386116965f);
   grain_length_base = (f0 < 1) ? 1 : sample_rate / (grain_length_base * f0);
   float grain_length_scale = density * (modulated_density + 1.0f);
   return grain_length_base * grain_length_scale;
@@ -403,11 +419,8 @@ void _trigger_pulsaret(ps_t *self, float pulse_frequency, float oscPhase)
     depth_max *= self->mod_ratio / minRatioCutoff;
   }
 
-  #ifdef ARM_MATH_CM7
+  // LUT sine is the hardware path; far cheaper than libm sinf on the A7.
   float lfo = arm_sin_f32(oscPhase * PI * 2);
-  #else
-  float lfo = sinf(oscPhase * PI * 2);
-  #endif
 
   float modulated_density = linear_scale(
     lfo,
@@ -564,7 +577,7 @@ float pulsar_process(ps_t *self, float pulse_frequency, uint8_t resync, float *d
   float output = samp;
   output *= 0.5;
 
-  output = tanhf(output); // Apply tanh to the output for saturation
+  output = fast_tanh(output); // Apply tanh to the output for saturation
 
   // tanh scaling
   // float knee = 0.75f;

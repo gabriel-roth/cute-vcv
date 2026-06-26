@@ -1,6 +1,7 @@
 #include "mom_jeans_voice.h"
 #include <math.h>
 #include "pulsar.h"
+#include "pulsar_lut.h" // arm_sin_f32 LUT sine
 
 uint8_t mj_sync_gate(float volts) {
     return volts > 2.5f ? 1 : 0;
@@ -21,7 +22,7 @@ void mj_voice_map(const mj_voice_in_t *in, mj_voice_config_t *out) {
 
     float pitch = mj_scaleLin(in->pitch_param, 0.0f, 1.0f, pitch_min, pitch_max);
     pitch += in->v_oct_cv * 12.0f;
-    pitch = 27.5f * powf(2.0f, pitch / 12.0f);
+    pitch = 27.5f * exp2f(pitch / 12.0f); // exp2f is a more direct path than powf(2,x)
     pitch += in->linear_fm_cv * fm_index * pitch * 0.2f;
     out->pulse_frequency = mj_clampf(pitch, 1.0f, 20000.0f);
 
@@ -45,7 +46,9 @@ mj_voice_out_t mj_voice_process(ps_t *pulsar, const mj_voice_in_t *in, uint8_t s
     float debug = 0.0f;
     float pulse = pulsar_process(pulsar, cfg.pulse_frequency, sync_gate, &debug);
     float sync_out = pulsar_get_sync_output(pulsar);
-    float lfo = sinf(pulsar_get_internal_lfo_phase(pulsar) * 2.0f * (float)PI);
+    // LUT sine: this LFO value only drives the cadence LED, computed per sample
+    // per channel, so the cheaper path matters and accuracy is irrelevant.
+    float lfo = arm_sin_f32(pulsar_get_internal_lfo_phase(pulsar) * 2.0f * (float)PI);
     float mod_rate = pulsar_get_internal_mod_rate(pulsar);
 
     mj_voice_out_t o = { pulse, sync_out, lfo, mod_rate };
