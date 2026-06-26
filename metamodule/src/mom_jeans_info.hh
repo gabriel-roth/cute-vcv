@@ -9,35 +9,35 @@ using namespace MetaModule;
 struct CuteKnob : Knob {
     constexpr CuteKnob() = default;
     constexpr CuteKnob(BaseElement b, float def = 0.f,
-                       std::string_view img = "CuteLab/components/knob.png")
+                       std::string_view img = "4ms/comp/knob_x.png")
         : Knob{{{b, img}, def, 0.f, 1.f}} {}
 };
 struct CuteButton : LatchingButton {
     constexpr CuteButton() = default;
     constexpr CuteButton(BaseElement b)
-        : LatchingButton{{{b, "CuteLab/components/button.png"}}} {}
+        : LatchingButton{{{b, "4ms/comp/button_x.png"}}} {}
 };
 struct CuteJackIn : JackInput {
     constexpr CuteJackIn() = default;
     constexpr CuteJackIn(BaseElement b)
-        : JackInput{{{b, "CuteLab/components/jack.png"}}} {}
+        : JackInput{{{b, "4ms/comp/jack_x.png"}}} {}
 };
 struct CuteJackOut : JackOutput {
     constexpr CuteJackOut() = default;
     constexpr CuteJackOut(BaseElement b)
-        : JackOutput{{{b, "CuteLab/components/jack.png"}}} {}
+        : JackOutput{{{b, "4ms/comp/jack_x.png"}}} {}
 };
 struct CuteLight : MonoLight {
     constexpr CuteLight() = default;
     constexpr CuteLight(BaseElement b)
-        : MonoLight{{{b, "CuteLab/components/light.png"}}} {}
+        : MonoLight{{{b, "4ms/comp/led_x.png"}}} {}
 };
 
 struct MomJeansInfo : ModuleInfoBase {
     static constexpr std::string_view slug{"mom-jeans"};
     static constexpr std::string_view description{"Pulsar synthesis oscillator"};
     static constexpr uint32_t width_hp = 8;   // must be non-zero; ~40mm fits the panel
-    static constexpr std::string_view png_filename{"CuteLab/faceplates/mom-jeans.png"};
+    static constexpr std::string_view png_filename{"CuteLab/mom-jeans.png"};
 
     enum class Elem {
         // Params: knobs
@@ -54,7 +54,7 @@ struct MomJeansInfo : ModuleInfoBase {
 
     static constexpr std::array<Element, 19> Elements{{
         CuteKnob{{10.329f, 19.253f, Coords::Center, "Pitch"},   16.0f/26.0f},
-        CuteKnob{{31.296f, 22.843f, Coords::Center, "Density"}, 0.0f, "CuteLab/components/knob_big.png"},
+        CuteKnob{{31.296f, 22.843f, Coords::Center, "Density"}, 0.0f, "4ms/comp/knob_large_x.png"},
         CuteKnob{{31.374f, 44.988f, Coords::Center, "Torque"},  0.0f},
         CuteKnob{{13.963f, 49.862f, Coords::Center, "Cadence"}, 0.0f},
         CuteKnob{{23.967f, 68.655f, Coords::Center, "Shape"},   0.0f},
