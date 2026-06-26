@@ -23,8 +23,8 @@ set(SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 add_library(CuteLab STATIC ${CUTE_VCV_SOURCES})
 
 target_sources(CuteLab PRIVATE
-    ${SOURCE_DIR}/src/plugin.cpp 
-    ${SOURCE_DIR}/src/mom-jeans.cpp
+    ${SOURCE_DIR}/metamodule/src/mom_jeans_core.cc
+    ${SOURCE_DIR}/cores/mom_jeans/mom_jeans_voice.c
     ${SOURCE_DIR}/cores/oscillator/lut/lut_saw_uint8.c
     ${SOURCE_DIR}/cores/oscillator/lut/lut_saw_uint16.c
     ${SOURCE_DIR}/cores/oscillator/lut/lut_sin_uint8.c
@@ -61,6 +61,8 @@ target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/pulsar)
 target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/phasor)
 target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/oscillator)
 target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/oscillator/lut)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/cores/mom_jeans)
+target_include_directories(CuteLab PRIVATE ${SOURCE_DIR}/metamodule/src)
 
 # Call this to link and create the plugin file
 create_plugin(
