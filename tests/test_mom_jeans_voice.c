@@ -74,8 +74,23 @@ static void test_voice_process(void) {
     CHECK(isfinite(o.mod_rate));
 }
 
+static void test_sync_trigger(void) {
+    mj_sync_state_t st = {0};
+    CHECK(mj_sync_trigger(&st, 0.0f) == 0);   // below high threshold
+    CHECK(mj_sync_trigger(&st, 0.9f) == 0);   // still below
+    CHECK(mj_sync_trigger(&st, 1.0f) == 1);   // rising edge fires once
+    CHECK(mj_sync_trigger(&st, 5.0f) == 0);   // held high: no re-fire (the bug)
+    CHECK(mj_sync_trigger(&st, 1.0f) == 0);   // still held high
+    CHECK(mj_sync_trigger(&st, 0.5f) == 0);   // between thresholds: holds, no fire
+    CHECK(mj_sync_trigger(&st, 0.0f) == 0);   // drops to low threshold -> reset
+    CHECK(mj_sync_trigger(&st, 1.0f) == 1);   // next rising edge fires again
+    mj_sync_state_t st2 = {0};                // state is per-voice
+    CHECK(mj_sync_trigger(&st2, 5.0f) == 1);  // first sample already high -> fires
+}
+
 int main(void) {
     test_sync_gate();
+    test_sync_trigger();
     test_voice_map();
     test_voice_process();
     if (failures) { printf("%d failures\n", failures); return 1; }

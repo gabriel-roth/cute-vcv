@@ -8,9 +8,19 @@
 extern "C" {
 #endif
 
-// Sync gate: stateless level detection matching main's `sync > 2.5f`.
-// Single source of truth for sync on both platforms.
+// Sync gate (legacy, stateless level detection). Retained only until call
+// sites migrate to mj_sync_trigger; removed in the same change.
 uint8_t mj_sync_gate(float volts);
+
+// Rising-edge sync detector. Single source of truth for both platforms.
+// Fires (returns 1) only on the LOW->HIGH transition; resets at MJ_SYNC_LOW.
+// Thresholds match the original dsp::SchmittTrigger defaults.
+#define MJ_SYNC_HIGH 1.0f
+#define MJ_SYNC_LOW  0.0f
+
+typedef struct { uint8_t high; } mj_sync_state_t;
+
+uint8_t mj_sync_trigger(mj_sync_state_t *st, float volts);
 
 typedef struct {
     float   pitch_param;     // 0..1 (raw PITCH_PARAM)

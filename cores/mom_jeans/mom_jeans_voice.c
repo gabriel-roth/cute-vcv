@@ -7,6 +7,12 @@ uint8_t mj_sync_gate(float volts) {
     return volts > 2.5f ? 1 : 0;
 }
 
+uint8_t mj_sync_trigger(mj_sync_state_t *st, float volts) {
+    if (!st->high && volts >= MJ_SYNC_HIGH) { st->high = 1; return 1; }
+    if ( st->high && volts <= MJ_SYNC_LOW)  { st->high = 0; }
+    return 0;
+}
+
 static float mj_clampf(float x, float a, float b) {
     return fmaxf(fminf(x, b), a);
 }
