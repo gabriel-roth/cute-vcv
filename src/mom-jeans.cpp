@@ -1,5 +1,6 @@
 #include "plugin.hpp"
 #include "pulsar.h"
+#include "mom_jeans_voice.h"
 #include <settings.hpp>
 
 // #define INCLUDE_GEN
@@ -242,17 +243,7 @@ struct MomJeansBase : Module {
 		Module::onSampleRateChange(e);
 	}
 
-	virtual PulsarOutput nextSample(
-		float pulse_frequency,
-		float density_ratio,
-		float mod_ratio,
-		float mod_depth,
-		float waveform,
-		uint8_t ratio_lock,
-		uint8_t frequency_couple,
-		uint8_t sync,
-		int channel = 0
-	) = 0;
+	virtual PulsarOutput nextSample(const mj_voice_in_t &in, uint8_t sync_gate, int channel) = 0;
 
 	void process(const ProcessArgs& args) override {
 
@@ -303,40 +294,25 @@ struct MomJeansBase : Module {
 			float sync = inputs[SYNC_INPUT].getPolyVoltage(c);
 			float density = inputs[DENSITY_INPUT].getPolyVoltage(c);
 
-			if (!inputs[FM_INDEX_INPUT].isConnected()) {
-				fm_index = 1.0f;
-			}
+			mj_voice_in_t vin = {};
+			vin.pitch_param = params[PITCH_PARAM].getValue();
+			vin.density_param = density_param;   // already /100
+			vin.torque_param = torque_param;     // already /100
+			vin.cadence_param = cadence_param;   // already /100
+			vin.shape_param = shape_param;       // already /5
+			vin.coupling = coupling > 0.5f ? 1 : 0;
+			vin.quantization = quantization > 0.5f ? 1 : 0;
+			vin.pitch_mode = pitch_mode > 0.5f ? 1 : 0;
+			vin.density_cv = density;
+			vin.shape_cv = shape;
+			vin.torque_cv = torque;
+			vin.cadence_cv = cadence;
+			vin.fm_index_cv = fm_index;
+			vin.fm_index_connected = inputs[FM_INDEX_INPUT].isConnected() ? 1 : 0;
+			vin.linear_fm_cv = linear_fm;
+			vin.v_oct_cv = v_oct;
 
-			// Simply scale the pitch, since the hardware DAC can't do LFO values
-			float lfo_cutoff = 0.0f;
-			float pulse_frequency = 0.f;
-
-			float pitch = params[PITCH_PARAM].getValue();
-			pitch = scaleLin(pitch, lfo_cutoff, 1.f, pitch_min, pitch_max);
-			pitch += v_oct * 12.0f;
-			pitch = 27.5 * powf(2.f, pitch / 12.f);
-
-			// apply linear fm
-			pitch += linear_fm * fm_index * pitch * 0.2f;
-			pulse_frequency = fclampf(pitch, 1.0f, 20000.0f);
-
-			float density_input_voltage = density + (density_param - 0.5) * 10.0f;
-			float density_ratio = fclampf(density_input_voltage / 5.0f, -1.0f, 1.0f);
-			float mod_ratio = fclampf(cadence / 5.0 + cadence_param, 0.0, 1.0);
-			float mod_depth = fclampf(torque / 5.0 + torque_param, 0.0, 1.0);
-			float waveform = fclampf(shape / 5.0 + shape_param, 0.0, 1.0) * 4.9999f;
-			
-			PulsarOutput pulsar_output = nextSample(
-				pulse_frequency,
-				density_ratio,
-				mod_ratio,
-				mod_depth,
-				waveform,
-				quantization > 0.5f ? 1 : 0,
-				coupling > 0.5f ? 1 : 0,
-				sync > 2.5f ? 1 : 0,
-				c
-			);
+			PulsarOutput pulsar_output = nextSample(vin, mj_sync_gate(sync), c);
 
 			outputs[TRIGGER_OUTPUT].setVoltage(pulsar_output.sync * 10.0f, c);
 			outputs[OUTPUT_OUTPUT].setVoltage(pulsar_output.pulse * 10.0f, c);
@@ -361,53 +337,19 @@ struct MomJeans : MomJeansBase {
 		}
 	}
 
-	virtual PulsarOutput nextSample (
-		float pulse_frequency,
-		float density_ratio,
-		float mod_ratio,
-		float mod_depth,
-		float waveform,
-		uint8_t ratio_lock,
-		uint8_t frequency_couple,
-		uint8_t sync,
-		int channel = 0
-	) override {
-
-		ps_t &pulsar = pulsars[channel % 16];
-
-		pulsar_configure(
-			&pulsar,
-			pulse_frequency,
-			density_ratio,
-			mod_ratio,
-			mod_depth,
-			waveform,
-			ratio_lock,
-			frequency_couple
-		);
-
-		// Process pulsar
-		float debug_value = 0.0f;
-		float pulse = pulsar_process(&pulsar, pulse_frequency, sync, &debug_value);
-		float sync_output = pulsar_get_sync_output(&pulsar);
-		float internal_lfo = sinf(pulsar_get_internal_lfo_phase(&pulsar) * 2.0f * M_PI);
+	virtual PulsarOutput nextSample(const mj_voice_in_t &in, uint8_t sync_gate, int channel) override {
+		mj_voice_out_t o = mj_voice_process(&pulsars[channel % 16], &in, sync_gate);
 
 		if (channel == 0) {
-			float mod_rate = pulsar_get_internal_mod_rate(&pulsar);
+			float mod_rate = o.mod_rate;
 			if (mod_rate < 15.0f) {
-				lights[CADENCE_LED_LIGHT].setBrightness(fclampf(internal_lfo, 0.0f, 1.0f));
+				lights[CADENCE_LED_LIGHT].setBrightness(fclampf(o.internal_lfo, 0.0f, 1.0f));
 			} else {
 				lights[CADENCE_LED_LIGHT].setBrightness(
-					fclampf(
-						scaleLin(mod_rate, 15.0f, 50.0f, 0.5f, 1.0f),
-						0.0f,
-						1.0f
-					)
-				);
+					fclampf(scaleLin(mod_rate, 15.0f, 50.0f, 0.5f, 1.0f), 0.0f, 1.0f));
 			}
 		}
-
-		return { pulse, sync_output, internal_lfo };
+		return { o.pulse, o.trigger, o.internal_lfo };
 	}
 };
 

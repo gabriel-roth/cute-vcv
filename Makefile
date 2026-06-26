@@ -8,6 +8,7 @@ CORES_DIR ?= ./cores
 FLAGS += -I$(CORES_DIR)/pulsar
 FLAGS += -I$(CORES_DIR)/phasor
 FLAGS += -I$(CORES_DIR)/oscillator
+FLAGS += -I$(CORES_DIR)/mom_jeans
 
 # Comment these out if you don't want the gen export involved
 # FLAGS += -I$(CORES_DIR)/pulsar/gen_dsp
@@ -33,6 +34,7 @@ SOURCES += $(CORES_DIR)/oscillator/lut/lut_sin_uint16.c
 SOURCES += $(CORES_DIR)/oscillator/lut/lut_saw_uint16.c
 SOURCES += $(CORES_DIR)/oscillator/lut/lut_square_uint16.c
 SOURCES += $(CORES_DIR)/oscillator/lut/lut_tri_uint16.c
+SOURCES += $(CORES_DIR)/mom_jeans/mom_jeans_voice.c
 
 # Comment these out if you don't want the gen export involved
 # SOURCES += $(CORES_DIR)/pulsar/gen_dsp/genlib.cpp
