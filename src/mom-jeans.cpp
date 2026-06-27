@@ -64,6 +64,11 @@ struct FrequencyParamQuantity : ParamQuantity {
 struct MomJeansBase : Module {
 	FrequencyParamQuantity *frequencyParamQuantity;
 
+	// Per-channel edge detector for the sync input. The sync argument to
+	// pulsar_process() resets the phasor, so it must fire only on the rising
+	// edge — passing a raw level retriggers every sample while sync is high.
+	dsp::SchmittTrigger sync_triggers[16];
+
 	enum Theme {
 		FOLLOW = 0,  // Add this = 0,
 		LIGHT = 1,
@@ -334,7 +339,7 @@ struct MomJeansBase : Module {
 				waveform,
 				quantization > 0.5f ? 1 : 0,
 				coupling > 0.5f ? 1 : 0,
-				sync > 2.5f ? 1 : 0,
+				sync_triggers[c].process(sync, 0.1f, 2.f) ? 1 : 0,
 				c
 			);
 
